@@ -45,6 +45,14 @@ public class Util {
 		return String.format("```diff\n- %s\n```", text);
 	}
 
+	public static void sendWarning(final MessageChannel channel, final String message) {
+		send(channel, makeWarning(message));
+	}
+
+	public static String makeWarning(final String text) {
+		return String.format("```fix\n%s\n```", text);
+	}
+
 	public static String escape(final String text) {
 		return text.replaceAll("[!\"#$%&'()*+,\\-./:;<=>?@[\\\\\\]^_`{|}~]", "\\$0");
 	}

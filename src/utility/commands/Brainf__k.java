@@ -28,62 +28,60 @@ public class Brainf__k extends ListenerAdapter {
 		}
 		if (params != null) {
 			try {
-			event.getChannel().sendTyping().queue();
+				event.getChannel().sendTyping().queue();
 
-			////////////////////////////////////////////////////
-			try {
-				Thread.sleep(128);
-			} catch (final InterruptedException e) {
-				e.printStackTrace();
-			}
+				try {
+					Thread.sleep(128);
+				} catch (final InterruptedException e) {
+					e.printStackTrace();
+				}
 
-			String code = message.replaceAll("^\\#(?:bf|brainfuck)\\s", "");
+				final String code = params[0];
+				String input = "";
 
-			String input = "";
-
-			boolean printUnprintables = false;
-			boolean resultOnly = false;
-			boolean codesOnly = false;
-			boolean escapeMarkdown = false;
-			boolean printTape = false;
-			boolean wrapToByte = false;
-			Matcher m = Pattern.compile("^\\$([a-z]+)").matcher(code);
-			while (m.find()) {
-				final char[] flags = m.group(1).toCharArray();
-				for (final char f : flags) {
-					switch (f) {
-						case 'p':
-							printUnprintables = true;
-							break;
-						case 'r':
-							resultOnly = true;
-							break;
-						case 'c':
-							codesOnly = true;
-							break;
-						case 'm':
-							escapeMarkdown = true;
-							break;
-						case 't':
-							printTape = true;
-							break;
-						case 'w':
-							wrapToByte = true;
-							break;
+				boolean printUnprintables = false;
+				boolean resultOnly = false;
+				boolean codesOnly = false;
+				boolean escapeMarkdown = false;
+				boolean printTape = false;
+				boolean wrapToByte = false;
+				boolean numericInput = params.length > 2;
+				final Matcher m = Pattern.compile("^\\$([a-z]+)").matcher(code);
+				while (m.find()) {
+					for (final char f : flags) {
+						switch (f) {
+							case 'p':
+								printUnprintables = true;
+								break;
+							case 'r':
+								resultOnly = true;
+								break;
+							case 'c':
+								codesOnly = true;
+								break;
+							case 'm':
+								escapeMarkdown = true;
+								break;
+							case 't':
+								printTape = true;
+								break;
+							case 'w':
+								wrapToByte = true;
+								break;
+							case 'n':
+								numericInput = true;
+								break;
+						}
 					}
 				}
-			}
-			if (resultOnly) codesOnly = false;
+				if (resultOnly) codesOnly = false;
 
-			m = Pattern.compile("\\\\([inc])\\s([\\s\\S]*)$").matcher(code);
-			if (m.find()) {
-				if (m.group(1).charAt(0) == 'n' || m.group(1).charAt(0) == 'c') {
+				if (numericInput) {
 					final StringBuffer sb = new StringBuffer();
-					final String[] codes = m.group(2).split("/");
 					boolean oob = false;
-					for (final String s : codes) {
+					for (int n = 1; n < params.length; n++) {
 						try {
-							final BigInteger i = new BigInteger(s);
+							final BigInteger i = new BigInteger(params[n]);
 							final BigInteger mod = i.mod(BigInteger.valueOf(65536));
 							if (!i.equals(mod)) {
 								oob = true;
@@ -91,7 +89,7 @@ public class Brainf__k extends ListenerAdapter {
 
 							sb.append((char) mod.intValue());
 						} catch (final NumberFormatException e) {
-							send(event.getChannel(), String.format("%s\nError: Invalid character code: \"%s\"", event.getAuthor().getAsMention(), s));
+							Util.sendError(event.getChannel(), String.format("Invalid character code: \"%s\"", params[n]));
 							return;
 						}
 					}
@@ -104,13 +102,11 @@ public class Brainf__k extends ListenerAdapter {
 							real.append('/');
 						}
 						real.deleteCharAt(real.length() - 1);
-						send(event.getChannel(), String.format("%s\nWarning: Out of bounds character codes in input will be wrapped to %s (%s)", event.getAuthor().getAsMention(), real.toString(), input));
+						Util.sendWarning(event.getChannel(), String.format("Warning: Out of bounds character codes in input will be wrapped to %s (%s)", real.toString(), input));
 					}
-				} else {
-					input = m.group(2);
+				} else if (params.length > 1) {
+					input = params[1];
 				}
-				code = code.substring(0, m.start());
-			}
 			code = code.replaceAll("[^\\<\\>\\+\\-\\,\\.\\[\\]]+", "");
 
 			final List<Integer> tape = new ArrayList<>(1);
@@ -119,7 +115,7 @@ public class Brainf__k extends ListenerAdapter {
 			int inputIndex = 0;
 
 			final StringBuffer out = codesOnly ? null : new StringBuffer(), outCodes = resultOnly ? null : new StringBuffer();
-
+			//////////////////////////////////////////
 			final String interpret = interpretBf ? "Interpreting brainfuck-like input as brainfuck code.\n" : "";
 
 			long n = 0;
@@ -308,13 +304,16 @@ public class Brainf__k extends ListenerAdapter {
 
 			send(event.getChannel(), String.format("%s\n%s", event.getAuthor().getAsMention(), code.toString()));
 		}
-	} catch (final Exception e) {
+	}catch(
+
+	final Exception e)
+	{
 		send(event.getChannel(), "Error: " + e.toString());
 		e.printStackTrace();
 	}
 	//////////////////////////////////////////////////////////////////
 
-		}
+}
 }
 
 }
