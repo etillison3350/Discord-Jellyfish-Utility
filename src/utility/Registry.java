@@ -3,6 +3,7 @@ package utility;
 import java.util.Arrays;
 import java.util.stream.Collectors;
 
+import utility.commands.Brainf__k;
 import utility.commands.StandardCommandListener;
 
 public enum Registry {
@@ -18,8 +19,8 @@ public enum Registry {
 					Util.send(e.getChannel(), String.format("**%s**\nUsage: %s\n%s", r.command, r.usage, r.description));
 					return;
 				}
-				Util.sendError(e.getChannel(), "No command could be found named '" + params[0] + "'.");
 			}
+			Util.sendError(e.getChannel(), "No command could be found named '" + params[0] + "'.");
 		}
 	})),
 	ECHO("echo", "echo(<_string_>)", "Sends the given string", new StandardCommandListener("echo", e -> {
@@ -29,7 +30,18 @@ public enum Registry {
 		} else if (params.length > 0) {
 			Util.send(e.getChannel(), Util.escape(params[0]));
 		}
-	}));
+	})),
+	BF("bf", "<bf|brainfuck>(<_code_>[, _input_])",
+			"Executes Brainfuck code\n" + //
+					"**Flags:**" + //
+					"\n$n: accept ASCII char codes as input. Will automatically be true if more than two parameters are passed" + //
+					"\n$p: print unprintable characters (e.g. NUL) as unicode control pictures" + //
+					"\n$r: print only results (no ASCII char codes)" + //
+					"\n$c: print only ASCII char codes. If both $c and $r are used, $c is ignored" + //
+					"\n$m: escape markdown characters" + //
+					"\n$t: print the tape" + //
+					"\n$w: wrap numbers in tape to byte range (`[0, 256)`)",
+			new Brainf__k());
 
 	public final String command, usage, description;
 	public final Object listener;

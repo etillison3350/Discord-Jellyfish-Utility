@@ -3,8 +3,6 @@ package utility.commands;
 import java.math.BigInteger;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Map;
-import java.util.TreeMap;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -13,6 +11,8 @@ import net.dv8tion.jda.core.hooks.ListenerAdapter;
 import utility.Util;
 
 public class Brainf__k extends ListenerAdapter {
+
+	public static final String ESC = "!\"#$%&'()*+,-./:;<=>?@[\\]^_`{|}~";
 
 	@Override
 	public void onMessageReceived(final MessageReceivedEvent event) {
@@ -25,6 +25,7 @@ public class Brainf__k extends ListenerAdapter {
 			flags = Util.flags(message);
 		} else if (message.length() > 10 && message.replaceAll("[\\<\\>\\+\\-\\,\\.\\[\\]]", "").isEmpty()) {
 			params = new String[] {message};
+			Util.send(event.getChannel(), "Interpreting BF-like message as BF code");
 		}
 		if (params != null) {
 			try {
@@ -36,7 +37,7 @@ public class Brainf__k extends ListenerAdapter {
 					e.printStackTrace();
 				}
 
-				final String code = params[0];
+				String code = params[0];
 				String input = "";
 
 				boolean printUnprintables = false;
@@ -107,213 +108,179 @@ public class Brainf__k extends ListenerAdapter {
 				} else if (params.length > 1) {
 					input = params[1];
 				}
-			code = code.replaceAll("[^\\<\\>\\+\\-\\,\\.\\[\\]]+", "");
+				code = code.replaceAll("[^\\<\\>\\+\\-\\,\\.\\[\\]]+", "");
 
-			final List<Integer> tape = new ArrayList<>(1);
-			tape.add(0);
-			int ptr = 0;
-			int inputIndex = 0;
+				final List<Integer> tape = new ArrayList<>(1);
+				tape.add(0);
+				int ptr = 0;
+				int inputIndex = 0;
 
-			final StringBuffer out = codesOnly ? null : new StringBuffer(), outCodes = resultOnly ? null : new StringBuffer();
-			//////////////////////////////////////////
-			final String interpret = interpretBf ? "Interpreting brainfuck-like input as brainfuck code.\n" : "";
+				final StringBuffer out = codesOnly ? null : new StringBuffer();
+				final StringBuffer outCodes = resultOnly ? null : new StringBuffer();
+				//////////////////////////////////////////
 
-			long n = 0;
-			for (int i = 0; i < code.length(); i++) {
-				if (n++ > maxInstructions.getValue()) {
-					send(event.getChannel(), event.getAuthor(), out, outCodes, printTape ? tape : null, interpret + "Error: Program exceeded 268,435,455 instructions!");
-					return;
-				}
+				long n = 0;
+				for (int i = 0; i < code.length(); i++) {
+					if (n++ > 268435455) {
+						Util.send(event.getChannel(), message(out, outCodes, printTape ? tape : null, "Program exceeded 268,435,455 instructions"));
+						return;
+					}
 
-				if (printTape && tape.size() > 667 || out != null && out.length() >= 2000 || out == null && outCodes != null && outCodes.length() > 2000) {
-					send(event.getChannel(), event.getAuthor(), out, outCodes, printTape ? tape : null, interpret + "Error: Output exceeded 2000 characters!");
-					return;
-				} else if (tape.size() > 2000) {
-					send(event.getChannel(), event.getAuthor(), out, outCodes, null, interpret + "Error: Tape length exceeded 2000!");
-					return;
-				}
+					if (printTape && tape.size() > 667 || !codesOnly && out.length() >= 2000 || codesOnly && outCodes.length() > 2000) {
+						Util.send(event.getChannel(), message(out, outCodes, printTape ? tape : null, "Output exceeded 2,000 characters"));
+						return;
+					} else if (tape.size() > 2000) {
+						Util.send(event.getChannel(), message(out, outCodes, printTape ? tape : null, "Tape length exceeded 2,000"));
+						return;
+					}
 
-				switch (code.charAt(i)) {
-					case '>':
-						if (++ptr >= tape.size()) tape.add(0);
-						break;
-					case '<':
-						ptr--;
-						break;
-					case '+':
-						if (ptr < 0) {
-							send(event.getChannel(), event.getAuthor(), out, outCodes, printTape ? tape : null, interpret + "Error: Invalid pointer location: " + ptr);
-							return;
-						}
-						tape.set(ptr, wrapToByte ? (tape.get(ptr) + 1) % 256 : tape.get(ptr) + 1);
-						break;
-					case '-':
-						if (ptr < 0) {
-							send(event.getChannel(), event.getAuthor(), out, outCodes, printTape ? tape : null, interpret + "Error: Invalid pointer location: " + ptr);
-							return;
-						}
-						tape.set(ptr, wrapToByte ? (tape.get(ptr) - 1) % 256 : tape.get(ptr) - 1);
-						break;
-					case '.':
-						if (ptr < 0) {
-							send(event.getChannel(), event.getAuthor(), out, outCodes, printTape ? tape : null, interpret + "Error: Invalid pointer location: " + ptr);
-							return;
-						}
-						final int o = tape.get(ptr).intValue();
-						if (out != null) {
-							if (escapeMarkdown && ESC.indexOf(o) > 0) out.append('\\');
-							out.append(printUnprintables && o >= 0 && o < 32 ? (char) (9216 + o) : (char) o);
-						}
-						if (outCodes != null) outCodes.append(String.format("%d, ", o));
-						break;
-					case ',':
-						if (ptr < 0) {
-							send(event.getChannel(), event.getAuthor(), out, outCodes, printTape ? tape : null, interpret + "Error: Invalid pointer location: " + ptr);
-							return;
-						}
-						try {
-							final int val = input.charAt(inputIndex++);
-							tape.set(ptr, wrapToByte ? val % 256 : val);
-						} catch (final IndexOutOfBoundsException e) {
-							tape.set(ptr, 0);
-						}
-						break;
-					case '[':
-						if (ptr < 0) {
-							send(event.getChannel(), event.getAuthor(), out, outCodes, printTape ? tape : null, interpret + "Error: Invalid pointer location: " + ptr);
-							return;
-						}
-						if (tape.get(ptr) == 0) {
-							i++;
-							for (int bkt = 1; bkt > 0; i++) {
-								if (i >= code.length()) {
-									send(event.getChannel(), event.getAuthor(), out, outCodes, printTape ? tape : null, interpret + "Error: Unmatched brackets!");
-									return;
-								}
-
-								if (code.charAt(i) == '[')
-									bkt++;
-								else if (code.charAt(i) == ']') bkt--;
+					switch (code.charAt(i)) {
+						case '>':
+							if (++ptr >= tape.size()) tape.add(0);
+							break;
+						case '<':
+							ptr--;
+							break;
+						case '+':
+							if (ptr < 0) {
+								Util.send(event.getChannel(), message(out, outCodes, printTape ? tape : null, "Invalid pointer location: " + ptr));
+								return;
 							}
-							i--;
-						}
-						break;
-					case ']':
-						if (ptr < 0) {
-							send(event.getChannel(), event.getAuthor(), out, outCodes, printTape ? tape : null, interpret + "Error: Invalid pointer location: " + ptr);
-							return;
-						}
-						if (tape.get(ptr) != 0) {
-							i--;
-							for (int bkt = 1; bkt > 0; i--) {
-								if (i < 0) {
-									send(event.getChannel(), event.getAuthor(), out, outCodes, printTape ? tape : null, interpret + "Error: Unmatched brackets!");
-									return;
-								}
-
-								if (code.charAt(i) == '[')
-									bkt--;
-								else if (code.charAt(i) == ']') bkt++;
+							tape.set(ptr, wrapToByte ? (tape.get(ptr) + 1) % 256 : tape.get(ptr) + 1);
+							break;
+						case '-':
+							if (ptr < 0) {
+								Util.send(event.getChannel(), message(out, outCodes, printTape ? tape : null, "Invalid pointer location: " + ptr));
+								return;
 							}
-							i++;
-						}
-						break;
-				}
-			}
+							tape.set(ptr, wrapToByte ? (tape.get(ptr) - 1) % 256 : tape.get(ptr) - 1);
+							break;
+						case '.':
+							if (ptr < 0) {
+								Util.send(event.getChannel(), message(out, outCodes, printTape ? tape : null, "Invalid pointer location: " + ptr));
+								return;
+							}
+							final int o = tape.get(ptr).intValue();
+							if (out != null) {
+								if (escapeMarkdown && ESC.indexOf(o) > 0) out.append('\\');
+								out.append(printUnprintables && o >= 0 && o < 32 ? (char) (9216 + o) : (char) o);
+							}
+							if (outCodes != null) outCodes.append(String.format("%d, ", o));
+							break;
+						case ',':
+							if (ptr < 0) {
+								Util.send(event.getChannel(), message(out, outCodes, printTape ? tape : null, "Invalid pointer location: " + ptr));
+								return;
+							}
+							try {
+								final int val = input.charAt(inputIndex++);
+								tape.set(ptr, wrapToByte ? val % 256 : val);
+							} catch (final IndexOutOfBoundsException e) {
+								tape.set(ptr, 0);
+							}
+							break;
+						case '[':
+							if (ptr < 0) {
+								Util.send(event.getChannel(), message(out, outCodes, printTape ? tape : null, "Invalid pointer location: " + ptr));
+								return;
+							}
+							if (tape.get(ptr) == 0) {
+								i++;
+								for (int bkt = 1; bkt > 0; i++) {
+									if (i >= code.length()) {
+										Util.send(event.getChannel(), message(out, outCodes, printTape ? tape : null, "Invalid pointer location: " + ptr));
+										return;
+									}
 
-			send(event.getChannel(), event.getAuthor(), out, outCodes, printTape ? tape : null, interpret);
-		} else if (message.matches("^\\#(?:bfhelp)(?:$|[^a-z])[\\s\\S]*")) {
-			send(event.getChannel(),
-					String.format("%s\n" + //
-							"**Syntax: #*<bf|brainfuck>* *[$flags]* *code* *[\\inFlags input]***" + //
-							"\n**$flags**" + //
-							"\n$p: print unprintable characters (e.g. NUL) as unicode control pictures" + //
-							"\n$r: print only results (no ASCII char codes)" + //
-							"\n$c: print only ASCII char codes. If both $c and $r are used, $c is ignored" + //
-							"\n$m: escape markdown characters" + //
-							"\n$t: print the tape" + //
-							"\n$w: wrap numbers in tape to byte range (`[0, 256)`)" + //
-							"\n**\\inFlags**" + //
-							"\n\\i: Standard input\u2014all characters following are read as input." + //
-							"\n\\n or \\c: Character code input\u2014input is read as a series of slash separated character codes." + //
-							"\nReact with <:justin:302279919222784000> to remove your message.", event.getAuthor().getAsMention()));
-		} else if (message.matches("^\\#(?:tobf)(?:$|[^a-z])[\\s\\S]*")) {
-			final String m = message.replaceAll("^\\#(?:tobf)\\s", "");
+									if (code.charAt(i) == '[')
+										bkt++;
+									else if (code.charAt(i) == ']') bkt--;
+								}
+								i--;
+							}
+							break;
+						case ']':
+							if (ptr < 0) {
+								Util.send(event.getChannel(), message(out, outCodes, printTape ? tape : null, "Invalid pointer location: " + ptr));
+								return;
+							}
+							if (tape.get(ptr) != 0) {
+								i--;
+								for (int bkt = 1; bkt > 0; i--) {
+									if (i < 0) {
+										Util.send(event.getChannel(), message(out, outCodes, printTape ? tape : null, "Unmatched brackets"));
+										return;
+									}
 
-			final Map<Integer, Integer> sixteens = new TreeMap<>();
-			for (final char c : m.toCharArray()) {
-				sixteens.put(c / 16, 0);
-			}
-
-			int index = 1;
-			final StringBuffer code = new StringBuffer("++++++++++++++++[");
-			for (final Integer c : sixteens.keySet().toArray(new Integer[sixteens.size()])) {
-				code.append('>');
-				if (c < 16) {
-					for (int n = 0; n < c; n++) {
-						code.append('+');
+									if (code.charAt(i) == '[')
+										bkt--;
+									else if (code.charAt(i) == ']') bkt++;
+								}
+								i++;
+							}
+							break;
 					}
-				} else {
-					for (int n = 0; n < 8; n++) {
-						code.append('+');
-					}
-					code.append("[>");
-					for (int n = 0; n < c / 8; n++) {
-						code.append('+');
-					}
-					code.append("<-]>");
-					for (int n = 0; n < c % 8; n++) {
-						code.append('+');
-					}
-					index++;
-				}
-				sixteens.put(c, index++ << 4);
-			}
-			for (; index > 1; index--) {
-				code.append('<');
-			}
-			code.append("-]");
-
-			index = 0;
-
-			for (final char c : m.toCharArray()) {
-				final int sixteen = c / 16;
-				final int one = c % 16;
-				int currentOne = sixteens.get(sixteen) & 0b1111;
-				final int targetIndex = sixteens.get(sixteen) >> 4;
-				if (targetIndex > index) {
-					for (; targetIndex > index; index++)
-						code.append('>');
-				} else if (targetIndex < index) {
-					for (; targetIndex < index; index--)
-						code.append('<');
 				}
 
-				if (currentOne > one) {
-					for (; currentOne > one; currentOne--)
-						code.append('-');
-				} else if (currentOne < one) {
-					for (; currentOne < one; currentOne++)
-						code.append('+');
-				}
-
-				sixteens.put(sixteen, one | targetIndex << 4);
-
-				code.append('.');
+				Util.send(event.getChannel(), message(out, outCodes, printTape ? tape : null));
+			} catch (final Exception e) {
+				e.printStackTrace();
+				Util.sendError(event.getChannel(), e.toString());
 			}
-
-			send(event.getChannel(), String.format("%s\n%s", event.getAuthor().getAsMention(), code.toString()));
 		}
-	}catch(
 
-	final Exception e)
-	{
-		send(event.getChannel(), "Error: " + e.toString());
-		e.printStackTrace();
 	}
-	//////////////////////////////////////////////////////////////////
 
-}
-}
+	private String message(final StringBuffer out, final StringBuffer outCodes, final List<Integer> tape) {
+		return message(out, outCodes, tape, null);
+	}
+
+	private String message(final StringBuffer out, final StringBuffer outCodes, final List<Integer> tape, final String error) {
+		final StringBuffer message = new StringBuffer(error == null ? "" : String.format("```diff\n- %s\n```", error));
+		if (tape != null) {
+			if (message.length() > 0) message.append('\n');
+			message.append("Tape: ");
+			for (int n = 0; n < tape.size() && message.length() < 2005; n++) {
+				message.append(tape.get(n));
+				if (n < tape.size() - 1) message.append(", ");
+			}
+
+			if (message.length() >= 2000) {
+				message.delete(message.lastIndexOf(",", 1995), Integer.MAX_VALUE);
+				message.append("...");
+				return message.toString();
+			}
+		}
+
+		if (out != null) {
+			if (message.length() > 0) message.append('\n');
+			message.append("Result: ");
+			message.append(out.length() == 0 ? "[None]" : out);
+			if (message.length() >= 2000) {
+				message.delete(1995, Integer.MAX_VALUE);
+				message.append("...");
+				return message.toString();
+			}
+		}
+
+		if (outCodes != null && outCodes.length() > 0) {
+			if (message.length() > 0) message.append('\n');
+			message.append("Char codes: ");
+			if (message.length() > 1995) {
+				message.delete(1995, Integer.MAX_VALUE);
+				message.append("...");
+				return message.toString();
+			}
+
+			message.append(outCodes);
+			message.delete(message.length() - 2, Integer.MAX_VALUE);
+			if (message.length() >= 2000) {
+				message.delete(message.lastIndexOf(",", 1995), Integer.MAX_VALUE);
+				message.append("...");
+				return message.toString();
+			}
+		}
+		return message.toString();
+	}
 
 }
