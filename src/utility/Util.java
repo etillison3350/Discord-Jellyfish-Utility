@@ -25,7 +25,12 @@ public class Util {
 
 	public static String[] parseParams(final String command) {
 		if (!command.matches("^.*?(?<!\\\\)\\(.*?(?<!\\\\)\\).*")) return new String[0];
-		final String[] parts = command.substring(command.indexOf('(') + 1).split("(?<!\\\\)\\)")[0].split("(?<!\\\\)\\,");
+		String[] parts;
+		try {
+			parts = command.substring(command.indexOf('(') + 1).split("(?<!\\\\)\\)")[0].split("(?<!\\\\)\\,");
+		} catch (final IndexOutOfBoundsException e) {
+			return new String[0];
+		}
 
 		for (int n = 0; n < parts.length; n++) {
 			parts[n] = parts[n].trim().replaceFirst("\\\\$", " ").replaceAll("\\\\(.)", "$1");
@@ -54,6 +59,6 @@ public class Util {
 	}
 
 	public static String escape(final String text) {
-		return text.replaceAll("[!\"#$%&'()*+,\\-./:;<=>?@[\\\\\\]^_`{|}~]", "\\$0");
+		return text.replaceAll("[!\"#\\$%&\'\\(\\)\\*\\+\\,\\-\\.\\/:;\\<\\=\\>\\?@\\[\\\\\\]\\^_`\\{\\|\\}~]", "\\\\$0");
 	}
 }

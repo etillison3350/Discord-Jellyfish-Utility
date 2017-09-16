@@ -4,6 +4,7 @@ import java.util.Arrays;
 import java.util.stream.Collectors;
 
 import utility.commands.Brainf__k;
+import utility.commands.DigitReader;
 import utility.commands.StandardCommandListener;
 
 public enum Registry {
@@ -41,7 +42,8 @@ public enum Registry {
 					"\n$m: escape markdown characters" + //
 					"\n$t: print the tape" + //
 					"\n$w: wrap numbers in tape to byte range (`[0, 256)`)",
-			new Brainf__k());
+			new Brainf__k()),
+	DIGIT("digit", "digit([_hidden\\_node\\_count_][, _bias_])", "Guesses the digit that the attached 28x28 image represents. Number of hidden nodes and bias can be supplied, and will only be used if the correct file exists.\n$o also prints the output layer.", new DigitReader());
 
 	public final String command, usage, description;
 	public final Object listener;
