@@ -52,7 +52,7 @@ public class DigitReader extends StandardCommandListener {
 							Util.sendError(event.getChannel(), "Invalid number of parameters");
 						}
 
-						if (!Files.exists(Paths.get("digit-weights/weights0_" + suffix + ".txt")) && Files.exists(Paths.get("digit-weights/weights1_" + suffix + ".txt"))) {
+						if (!Files.exists(Paths.get("digit-weights/weights0_" + suffix + ".wt")) || !Files.exists(Paths.get("digit-weights/weights1_" + suffix + ".wt"))) {
 							Util.sendWarning(event.getChannel(), "Could not find the weights specified; using default weights instead.");
 
 							suffix = DEFAULT_NODES;
@@ -60,7 +60,7 @@ public class DigitReader extends StandardCommandListener {
 						}
 						if (suffix == null) suffix = DEFAULT_NODES;
 
-						final List<String> weight0 = Files.readAllLines(Paths.get("digit-weights/weights0_" + suffix + ".txt"));
+						final List<String> weight0 = Files.readAllLines(Paths.get("digit-weights/weights0_" + suffix + ".wt"));
 
 						final float[][] arr0 = new float[weight0.size()][weight0.get(0).length() / 8];
 
@@ -71,7 +71,7 @@ public class DigitReader extends StandardCommandListener {
 							}
 						}
 
-						final List<String> weight1 = Files.readAllLines(Paths.get("digit-weights/weights1_" + suffix + ".txt"));
+						final List<String> weight1 = Files.readAllLines(Paths.get("digit-weights/weights1_" + suffix + ".wt"));
 						final float[][] arr1 = new float[weight1.size()][weight1.get(0).length() / 8];
 
 						for (int r = 0; r < weight1.size(); r++) {
@@ -162,16 +162,6 @@ public class DigitReader extends StandardCommandListener {
 		}
 
 		return x;
-	}
-
-	private static void print(final List<String> out, final float[][] arr) {
-		Arrays.stream(arr).map(a -> {
-			final StringBuffer sb = new StringBuffer("[");
-			for (final float n : a)
-				sb.append(String.format("%.02f, ", n));
-			sb.append("],");
-			return sb.toString();
-		}).forEach(out::add);
 	}
 
 }
