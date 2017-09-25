@@ -16,6 +16,8 @@ public class StandardCommandListener extends ListenerAdapter {
 
 	@Override
 	public void onMessageReceived(final MessageReceivedEvent event) {
+		if (event.getAuthor().isBot()) return;
+
 		if (event.getMessage().getContent().matches(regex)) action.accept(event);
 	}
 

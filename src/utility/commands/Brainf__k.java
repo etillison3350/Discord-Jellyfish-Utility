@@ -16,6 +16,8 @@ public class Brainf__k extends ListenerAdapter {
 
 	@Override
 	public void onMessageReceived(final MessageReceivedEvent event) {
+		if (event.getAuthor().isBot()) return;
+
 		final String message = event.getMessage().getContent();
 
 		String[] params = null;

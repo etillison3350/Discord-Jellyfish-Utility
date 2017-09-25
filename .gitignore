@@ -22,3 +22,6 @@ hs_err_pid*
 
 # file containing the token, not to be shared without permission
 token.txt
+
+#server-specific files
+webhooks.txt

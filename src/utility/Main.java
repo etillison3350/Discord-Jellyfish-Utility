@@ -32,14 +32,14 @@ public class Main {
 		}
 
 		try {
-			jda = new JDABuilder(AccountType.BOT).addEventListener(Arrays.stream(Registry.values()).map(r -> r.listener).toArray()).addEventListener(new ListenerAdapter() {
+			jda = new JDABuilder(AccountType.BOT).addEventListener(new ListenerAdapter() {
 
 				@Override
 				public void onMessageReceived(final MessageReceivedEvent event) {
 					System.out.printf("[%s] %s\n", event.getAuthor().getName(), event.getMessage().getContent());
 				}
 
-			}).setToken(token).buildBlocking();
+			}).addEventListener(Arrays.stream(Registry.values()).map(r -> r.listener).toArray()).setToken(token).buildBlocking();
 		} catch (LoginException | IllegalArgumentException | InterruptedException | RateLimitedException e) {
 			e.printStackTrace();
 		}
